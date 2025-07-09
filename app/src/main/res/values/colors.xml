@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary">#2196F3</color>
+    <color name="primary_dark">#1976D2</color>
+    <color name="primary_light">#64B5F6</color>
+    
+    <!-- Accent Colors -->
+    <color name="accent">#FF5722</color>
+    <color name="accent_dark">#E64A19</color>
+    <color name="accent_light">#FF8A65</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="error">#F44336</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FFC107</color>
+    
+    <!-- Text Colors -->
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#757575</color>
+    <color name="disabled_text">#BDBDBD</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    
+    <!-- Other Colors -->
+    <color name="divider">#E0E0E0</color>
+    <color name="transparent">#00000000</color>
+    <color name="semi_transparent">#80000000</color>
+    
+    <!-- Status Bar Colors -->
+    <color name="status_bar_color">@color/primary_dark</color>
+    
+    <!-- Dark Theme Colors -->
+    <color name="dark_background">#121212</color>
+    <color name="dark_surface">#1E1E1E</color>
+    <color name="dark_primary_text">#FFFFFF</color>
+    <color name="dark_secondary_text">#B3B3B3</color>
+    
+    <!-- Chart Colors -->
+    <color name="chart_line_1">#2196F3</color>
+    <color name="chart_line_2">#4CAF50</color>
+    <color name="chart_line_3">#FF9800</color>
+    <color name="chart_line_4">#9C27B0</color>
+    <color name="chart_line_5">#F44336</color>
+    
+    <!-- Activity Level Colors -->
+    <color name="activity_level_0">#EEEEEE</color>
+    <color name="activity_level_1">#C8E6C9</color>
+    <color name="activity_level_2">#81C784</color>
+    <color name="activity_level_3">#4CAF50</color>
+    <color name="activity_level_4">#2E7D32</color>
+    
+    <!-- Weather Colors -->
+    <color name="weather_sunny">#FFC107</color>
+    <color name="weather_cloudy">#9E9E9E</color>
+    <color name="weather_rainy">#2196F3</color>
+    <color name="weather_stormy">#3F51B5</color>
+    <color name="weather_snowy">#F5F5F5</color>
+</resources>

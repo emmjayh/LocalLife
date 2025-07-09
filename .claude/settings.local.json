@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java:*)",
+      "Bash(pkg list-installed:*)",
+      "Bash(command:*)",
+      "Bash(command -v:*)",
+      "Bash(pkg search:*)",
+      "Bash(pkg install:*)",
+      "Bash(d8:*)",
+      "Bash(ls:*)",
+      "Bash(aapt2 compile:*)",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(./build_apk.sh:*)",
+      "Bash(keytool:*)",
+      "Bash(rm:*)",
+      "Bash(apksigner verify:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(./simple_build.sh:*)",
+      "Bash(./build_simple.sh)",
+      "Bash(./build_minimal.sh:*)",
+      "Bash(jar:*)",
+      "Bash(git --version)",
+      "Bash(git config:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}
