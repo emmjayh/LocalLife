@@ -84,6 +84,9 @@ public class WeatherService {
         private float windSpeed;
         private float precipitation;
         private float cloudCover;
+        private float atmosphericPressure;
+        private float visibility;
+        private int windDirection;
         private String location;
         private Date timestamp;
         
@@ -122,6 +125,15 @@ public class WeatherService {
         public Date getTimestamp() { return timestamp; }
         public void setTimestamp(Date timestamp) { this.timestamp = timestamp; }
         
+        public float getAtmosphericPressure() { return atmosphericPressure; }
+        public void setAtmosphericPressure(float atmosphericPressure) { this.atmosphericPressure = atmosphericPressure; }
+        
+        public float getVisibility() { return visibility; }
+        public void setVisibility(float visibility) { this.visibility = visibility; }
+        
+        public int getWindDirection() { return windDirection; }
+        public void setWindDirection(int windDirection) { this.windDirection = windDirection; }
+        
         @Override
         public String toString() {
             return "WeatherData{" +
@@ -130,6 +142,10 @@ public class WeatherService {
                     ", condition='" + condition + '\'' +
                     ", windSpeed=" + windSpeed +
                     ", precipitation=" + precipitation +
+                    ", cloudCover=" + cloudCover +
+                    ", atmosphericPressure=" + atmosphericPressure +
+                    ", visibility=" + visibility +
+                    ", windDirection=" + windDirection +
                     ", location='" + location + '\'' +
                     '}';
         }
@@ -211,7 +227,7 @@ public class WeatherService {
         return BASE_URL + "?" +
                 "latitude=" + latitude +
                 "&longitude=" + longitude +
-                "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation,cloud_cover" +
+                "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,cloud_cover,surface_pressure,visibility" +
                 "&timezone=auto";
     }
     
@@ -219,7 +235,7 @@ public class WeatherService {
         return BASE_URL + "?" +
                 "latitude=" + latitude +
                 "&longitude=" + longitude +
-                "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation,cloud_cover" +
+                "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,cloud_cover,surface_pressure,visibility" +
                 "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code" +
                 "&forecast_days=" + days +
                 "&timezone=auto";
@@ -269,8 +285,11 @@ public class WeatherService {
         weatherData.setHumidity((float) current.getDouble("relative_humidity_2m"));
         weatherData.setWeatherCode(current.getInt("weather_code"));
         weatherData.setWindSpeed((float) current.getDouble("wind_speed_10m"));
+        weatherData.setWindDirection((int) current.optDouble("wind_direction_10m", 0));
         weatherData.setPrecipitation((float) current.optDouble("precipitation", 0.0));
         weatherData.setCloudCover((float) current.optDouble("cloud_cover", 0.0));
+        weatherData.setAtmosphericPressure((float) current.optDouble("surface_pressure", 1013.25));
+        weatherData.setVisibility((float) current.optDouble("visibility", 10000.0));
         
         return weatherData;
     }
@@ -287,8 +306,11 @@ public class WeatherService {
             weatherData.setHumidity((float) current.getDouble("relative_humidity_2m"));
             weatherData.setWeatherCode(current.getInt("weather_code"));
             weatherData.setWindSpeed((float) current.getDouble("wind_speed_10m"));
+            weatherData.setWindDirection((int) current.optDouble("wind_direction_10m", 0));
             weatherData.setPrecipitation((float) current.optDouble("precipitation", 0.0));
             weatherData.setCloudCover((float) current.optDouble("cloud_cover", 0.0));
+            weatherData.setAtmosphericPressure((float) current.optDouble("surface_pressure", 1013.25));
+            weatherData.setVisibility((float) current.optDouble("visibility", 10000.0));
             
             return weatherData;
         }
@@ -357,38 +379,112 @@ public class WeatherService {
     }
     
     /**
+     * Get wind direction as compass direction string
+     */
+    public static String getWindDirectionString(int degrees) {
+        if (degrees < 0) degrees += 360;
+        degrees = degrees % 360;
+        
+        String[] directions = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+                               "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+        
+        int index = (int) Math.round(degrees / 22.5) % 16;
+        return directions[index];
+    }
+    
+    /**
+     * Get atmospheric pressure category
+     */
+    public static String getAtmosphericPressureCategory(float pressure) {
+        if (pressure < 1009) return "Low";
+        if (pressure > 1019) return "High";
+        return "Normal";
+    }
+    
+    /**
+     * Get visibility category
+     */
+    public static String getVisibilityCategory(float visibility) {
+        if (visibility < 1000) return "Very Poor";
+        if (visibility < 4000) return "Poor";
+        if (visibility < 10000) return "Moderate";
+        return "Good";
+    }
+    
+    /**
      * Check if weather conditions are good for outdoor activities
      */
     public static boolean isGoodWeatherForOutdoorActivity(WeatherData weatherData) {
-        // Good weather criteria:
+        // Enhanced good weather criteria:
         // - Temperature between 10-30°C
         // - No precipitation or light precipitation
         // - Wind speed < 25 km/h
         // - Weather code indicates clear/partly cloudy conditions
+        // - Good visibility (>4000m)
+        // - Normal atmospheric pressure (1009-1019 hPa)
         
         float temp = weatherData.getTemperature();
         float precipitation = weatherData.getPrecipitation();
         float windSpeed = weatherData.getWindSpeed();
         int weatherCode = weatherData.getWeatherCode();
+        float visibility = weatherData.getVisibility();
+        float pressure = weatherData.getAtmosphericPressure();
         
         boolean goodTemperature = temp >= 10 && temp <= 30;
         boolean lowPrecipitation = precipitation <= 2.0; // Less than 2mm
         boolean moderateWind = windSpeed <= 25; // Less than 25 km/h
         boolean clearWeather = weatherCode <= 3 || weatherCode == 51; // Clear, partly cloudy, or light drizzle
+        boolean goodVisibility = visibility >= 4000; // Good visibility
+        boolean stablePressure = pressure >= 1009 && pressure <= 1019; // Stable pressure
         
-        return goodTemperature && lowPrecipitation && moderateWind && clearWeather;
+        return goodTemperature && lowPrecipitation && moderateWind && clearWeather && goodVisibility && stablePressure;
     }
     
     /**
      * Get weather impact on activity score
      */
     public static float getWeatherActivityMultiplier(WeatherData weatherData) {
-        if (isGoodWeatherForOutdoorActivity(weatherData)) {
-            return 1.2f; // Boost activity score by 20% for good weather
-        } else if (weatherData.getPrecipitation() > 5.0 || weatherData.getWindSpeed() > 40) {
-            return 0.8f; // Reduce activity score by 20% for bad weather
+        float multiplier = 1.0f;
+        
+        // Temperature impact
+        float temp = weatherData.getTemperature();
+        if (temp >= 15 && temp <= 25) {
+            multiplier *= 1.1f; // Ideal temperature
+        } else if (temp < 0 || temp > 35) {
+            multiplier *= 0.7f; // Extreme temperature
         }
-        return 1.0f; // Normal weather
+        
+        // Precipitation impact
+        float precipitation = weatherData.getPrecipitation();
+        if (precipitation > 5.0) {
+            multiplier *= 0.6f; // Heavy rain
+        } else if (precipitation > 2.0) {
+            multiplier *= 0.8f; // Moderate rain
+        }
+        
+        // Wind impact
+        float windSpeed = weatherData.getWindSpeed();
+        if (windSpeed > 40) {
+            multiplier *= 0.5f; // Very windy
+        } else if (windSpeed > 25) {
+            multiplier *= 0.8f; // Windy
+        }
+        
+        // Visibility impact
+        float visibility = weatherData.getVisibility();
+        if (visibility < 1000) {
+            multiplier *= 0.6f; // Poor visibility
+        } else if (visibility < 4000) {
+            multiplier *= 0.8f; // Limited visibility
+        }
+        
+        // Atmospheric pressure impact
+        float pressure = weatherData.getAtmosphericPressure();
+        if (pressure < 1000 || pressure > 1025) {
+            multiplier *= 0.9f; // Unstable pressure
+        }
+        
+        return Math.max(0.3f, Math.min(1.5f, multiplier)); // Clamp between 0.3 and 1.5
     }
     
     /**
