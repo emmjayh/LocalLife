@@ -22,6 +22,11 @@ import com.locallife.database.DatabaseHelper;
 import com.locallife.model.DayRecord;
 import com.locallife.service.WeatherService;
 import com.locallife.service.PhotoMetadataService;
+import com.locallife.service.AirQualityService;
+import com.locallife.service.MoonPhaseService;
+import com.locallife.service.UVIndexService;
+import com.locallife.service.SunriseSunsetService;
+import com.locallife.service.EnvironmentalInsightsService;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -43,8 +48,10 @@ public class DataCollectionService extends Service {
     // Service coordination intervals
     private static final long COORDINATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
     private static final long WEATHER_UPDATE_INTERVAL = 30 * 60 * 1000; // 30 minutes
+    private static final long ENVIRONMENTAL_UPDATE_INTERVAL = 60 * 60 * 1000; // 1 hour
     private static final long DATA_SYNC_INTERVAL = 15 * 60 * 1000; // 15 minutes
     private static final long CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+    private static final long INSIGHTS_UPDATE_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
     
     // Preferences
     private static final String PREFS_NAME = "data_collection_prefs";
@@ -57,6 +64,11 @@ public class DataCollectionService extends Service {
     private SharedPreferences preferences;
     private WeatherService weatherService;
     private PhotoMetadataService photoMetadataService;
+    private AirQualityService airQualityService;
+    private MoonPhaseService moonPhaseService;
+    private UVIndexService uvIndexService;
+    private SunriseSunsetService sunriseSunsetService;
+    private EnvironmentalInsightsService environmentalInsightsService;
     private Handler mainHandler;
     private ScheduledExecutorService scheduledExecutor;
     private ExecutorService backgroundExecutor;
@@ -87,9 +99,14 @@ public class DataCollectionService extends Service {
         preferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         weatherService = new WeatherService(this);
         photoMetadataService = new PhotoMetadataService(this);
+        airQualityService = new AirQualityService(this);
+        moonPhaseService = new MoonPhaseService(this);
+        uvIndexService = new UVIndexService(this);
+        sunriseSunsetService = new SunriseSunsetService(this);
+        environmentalInsightsService = new EnvironmentalInsightsService(this);
         mainHandler = new Handler(Looper.getMainLooper());
-        scheduledExecutor = Executors.newScheduledThreadPool(3);
-        backgroundExecutor = Executors.newFixedThreadPool(2);
+        scheduledExecutor = Executors.newScheduledThreadPool(5);
+        backgroundExecutor = Executors.newFixedThreadPool(3);
         
         // Create notification channel
         createNotificationChannel();
@@ -186,7 +203,9 @@ public class DataCollectionService extends Service {
         // Schedule periodic tasks
         scheduleDataSynchronization();
         scheduleWeatherUpdates();
+        scheduleEnvironmentalUpdates();
         schedulePhotoScanning();
+        scheduleInsightsGeneration();
         scheduleDataCleanup();
         scheduleServiceCoordination();
         
@@ -279,12 +298,28 @@ public class DataCollectionService extends Service {
         }, 0, WEATHER_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
     }
     
+    private void scheduleEnvironmentalUpdates() {
+        scheduledExecutor.scheduleAtFixedRate(() -> {
+            if (isRunning) {
+                updateEnvironmentalData();
+            }
+        }, 0, ENVIRONMENTAL_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+    
     private void schedulePhotoScanning() {
         scheduledExecutor.scheduleAtFixedRate(() -> {
             if (isRunning) {
                 scanPhotos();
             }
         }, 0, WEATHER_UPDATE_INTERVAL, TimeUnit.MILLISECONDS); // Same interval as weather
+    }
+    
+    private void scheduleInsightsGeneration() {
+        scheduledExecutor.scheduleAtFixedRate(() -> {
+            if (isRunning) {
+                generateEnvironmentalInsights();
+            }
+        }, INSIGHTS_UPDATE_INTERVAL, INSIGHTS_UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
     }
     
     private void scheduleDataCleanup() {
@@ -324,6 +359,9 @@ public class DataCollectionService extends Service {
                 syncBatteryData(todayRecord);
                 syncScreenTimeData(todayRecord);
                 syncPhotoData(todayRecord);
+                
+                // Load environmental data
+                databaseHelper.loadEnvironmentalData(todayRecord, today);
                 
                 // Recalculate activity score
                 todayRecord.calculateActivityScore();
@@ -463,6 +501,101 @@ public class DataCollectionService extends Service {
             } catch (Exception e) {
                 Log.e(TAG, "Error updating weather data", e);
                 recordError("Weather update error: " + e.getMessage());
+            }
+        });
+    }
+    
+    private void updateEnvironmentalData() {
+        backgroundExecutor.execute(() -> {
+            try {
+                Log.d(TAG, "Updating environmental data");
+                
+                String today = dateFormat.format(new Date());
+                
+                // Update air quality data
+                airQualityService.updateAirQualityData(37.7749, -122.4194, // Default location
+                    new AirQualityService.AirQualityCallback() {
+                        @Override
+                        public void onAirQualityReceived(AirQualityService.AirQualityData data) {
+                            Log.d(TAG, "Air quality data updated: AQI " + data.getAqi());
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "Air quality update failed: " + error);
+                        }
+                    });
+                
+                // Update moon phase data
+                moonPhaseService.updateMoonPhaseData(new MoonPhaseService.MoonPhaseCallback() {
+                    @Override
+                    public void onMoonPhaseReceived(MoonPhaseService.MoonPhaseData data) {
+                        Log.d(TAG, "Moon phase data updated: " + data.getPhase());
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "Moon phase update failed: " + error);
+                    }
+                });
+                
+                // Update UV index data
+                uvIndexService.updateUVIndexData(37.7749, -122.4194, // Default location
+                    new UVIndexService.UVIndexCallback() {
+                        @Override
+                        public void onUVIndexReceived(UVIndexService.UVIndexData data) {
+                            Log.d(TAG, "UV index data updated: " + data.getUvIndex());
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "UV index update failed: " + error);
+                        }
+                    });
+                
+                // Update sunrise/sunset data
+                sunriseSunsetService.updateSunriseSunsetData(37.7749, -122.4194, // Default location
+                    new SunriseSunsetService.SunriseSunsetCallback() {
+                        @Override
+                        public void onSunriseSunsetReceived(SunriseSunsetService.SunriseSunsetData data) {
+                            Log.d(TAG, "Sunrise/sunset data updated: " + data.getSunrise() + "/" + data.getSunset());
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "Sunrise/sunset update failed: " + error);
+                        }
+                    });
+                
+                Log.d(TAG, "Environmental data update completed");
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error updating environmental data", e);
+                recordError("Environmental data update failed: " + e.getMessage());
+            }
+        });
+    }
+    
+    private void generateEnvironmentalInsights() {
+        backgroundExecutor.execute(() -> {
+            try {
+                Log.d(TAG, "Generating environmental insights");
+                
+                // Generate insights for the past 30 days
+                var insights = environmentalInsightsService.generateInsights(30);
+                
+                Log.d(TAG, "Generated " + insights.size() + " environmental insights");
+                
+                // Could store insights in database or send notifications for important ones
+                for (var insight : insights) {
+                    if (insight.getConfidenceScore() > 0.8f) {
+                        Log.i(TAG, "High confidence insight: " + insight.getTitle() + " - " + insight.getDescription());
+                    }
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error generating environmental insights", e);
+                recordError("Environmental insights generation failed: " + e.getMessage());
             }
         });
     }
@@ -615,6 +748,20 @@ public class DataCollectionService extends Service {
         // Shutdown photo metadata service
         if (photoMetadataService != null) {
             photoMetadataService.shutdown();
+        }
+        
+        // Shutdown environmental services
+        if (airQualityService != null) {
+            airQualityService.shutdown();
+        }
+        if (moonPhaseService != null) {
+            moonPhaseService.shutdown();
+        }
+        if (uvIndexService != null) {
+            uvIndexService.shutdown();
+        }
+        if (sunriseSunsetService != null) {
+            sunriseSunsetService.shutdown();
         }
     }
     
