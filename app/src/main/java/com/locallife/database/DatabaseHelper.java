@@ -902,6 +902,211 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return photoMetadata;
     }
     
+    // Environmental Data CRUD Methods
+    
+    public long insertAirQualityData(String date, double latitude, double longitude, 
+                                   int aqi, double pm25, double pm10, double no2, 
+                                   double o3, double co, String source) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(KEY_DATE, date);
+        values.put(KEY_LATITUDE, latitude);
+        values.put(KEY_LONGITUDE, longitude);
+        values.put("aqi", aqi);
+        values.put("pm25", pm25);
+        values.put("pm10", pm10);
+        values.put("no2", no2);
+        values.put("o3", o3);
+        values.put("co", co);
+        values.put("source", source);
+        values.put(KEY_CREATED_AT, DATETIME_FORMAT.format(new Date()));
+        values.put(KEY_UPDATED_AT, DATETIME_FORMAT.format(new Date()));
+        
+        return db.insertOrThrow(TABLE_AIR_QUALITY, null, values);
+    }
+    
+    public long insertMoonPhaseData(String date, String phase, double illumination, 
+                                  int age, boolean isSupermoon, String activityRecommendation) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(KEY_DATE, date);
+        values.put("phase", phase);
+        values.put("illumination", illumination);
+        values.put("age", age);
+        values.put("is_supermoon", isSupermoon ? 1 : 0);
+        values.put("activity_recommendation", activityRecommendation);
+        values.put(KEY_CREATED_AT, DATETIME_FORMAT.format(new Date()));
+        values.put(KEY_UPDATED_AT, DATETIME_FORMAT.format(new Date()));
+        
+        return db.insertOrThrow(TABLE_MOON_PHASE, null, values);
+    }
+    
+    public long insertUVIndexData(String date, double latitude, double longitude, 
+                                double uvIndex, int burnTime, int tanTime, 
+                                int vitaminDTime, String recommendation) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(KEY_DATE, date);
+        values.put(KEY_LATITUDE, latitude);
+        values.put(KEY_LONGITUDE, longitude);
+        values.put("uv_index", uvIndex);
+        values.put("burn_time", burnTime);
+        values.put("tan_time", tanTime);
+        values.put("vitamin_d_time", vitaminDTime);
+        values.put("recommendation", recommendation);
+        values.put(KEY_CREATED_AT, DATETIME_FORMAT.format(new Date()));
+        values.put(KEY_UPDATED_AT, DATETIME_FORMAT.format(new Date()));
+        
+        return db.insertOrThrow(TABLE_UV_INDEX, null, values);
+    }
+    
+    public long insertSunriseSunsetData(String date, double latitude, double longitude, 
+                                      String sunrise, String sunset, int daylightDuration, 
+                                      String civilTwilight, String nauticalTwilight, 
+                                      String astronomicalTwilight, String circadianPhase) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(KEY_DATE, date);
+        values.put(KEY_LATITUDE, latitude);
+        values.put(KEY_LONGITUDE, longitude);
+        values.put("sunrise", sunrise);
+        values.put("sunset", sunset);
+        values.put("daylight_duration", daylightDuration);
+        values.put("civil_twilight", civilTwilight);
+        values.put("nautical_twilight", nauticalTwilight);
+        values.put("astronomical_twilight", astronomicalTwilight);
+        values.put("circadian_phase", circadianPhase);
+        values.put(KEY_CREATED_AT, DATETIME_FORMAT.format(new Date()));
+        values.put(KEY_UPDATED_AT, DATETIME_FORMAT.format(new Date()));
+        
+        return db.insertOrThrow(TABLE_DAYLIGHT_DATA, null, values);
+    }
+    
+    // Environmental Data Retrieval Methods
+    
+    public void loadEnvironmentalData(DayRecord dayRecord, String date) {
+        loadAirQualityData(dayRecord, date);
+        loadMoonPhaseData(dayRecord, date);
+        loadUVIndexData(dayRecord, date);
+        loadDaylightData(dayRecord, date);
+    }
+    
+    private void loadAirQualityData(DayRecord dayRecord, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_AIR_QUALITY, null, KEY_DATE + "=?", 
+                new String[]{date}, null, null, null);
+        
+        if (cursor.moveToFirst()) {
+            dayRecord.setAqi(cursor.getInt(cursor.getColumnIndex("aqi")));
+            dayRecord.setPm25Level(cursor.getFloat(cursor.getColumnIndex("pm25")));
+            dayRecord.setPm10Level(cursor.getFloat(cursor.getColumnIndex("pm10")));
+            dayRecord.setNo2Level(cursor.getFloat(cursor.getColumnIndex("no2")));
+            dayRecord.setO3Level(cursor.getFloat(cursor.getColumnIndex("o3")));
+            dayRecord.setCoLevel(cursor.getFloat(cursor.getColumnIndex("co")));
+            // Calculate activity impact based on AQI
+            dayRecord.setAirQualityActivityImpact(calculateAirQualityImpact(dayRecord.getAqi()));
+        }
+        cursor.close();
+    }
+    
+    private void loadMoonPhaseData(DayRecord dayRecord, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_MOON_PHASE, null, KEY_DATE + "=?", 
+                new String[]{date}, null, null, null);
+        
+        if (cursor.moveToFirst()) {
+            dayRecord.setMoonPhase(cursor.getString(cursor.getColumnIndex("phase")));
+            dayRecord.setMoonIllumination(cursor.getDouble(cursor.getColumnIndex("illumination")));
+            dayRecord.setMoonAge(cursor.getInt(cursor.getColumnIndex("age")));
+            dayRecord.setSupermoon(cursor.getInt(cursor.getColumnIndex("is_supermoon")) == 1);
+            // Calculate activity impact based on moon phase
+            dayRecord.setMoonPhaseActivityImpact(calculateMoonPhaseImpact(dayRecord.getMoonPhase()));
+        }
+        cursor.close();
+    }
+    
+    private void loadUVIndexData(DayRecord dayRecord, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_UV_INDEX, null, KEY_DATE + "=?", 
+                new String[]{date}, null, null, null);
+        
+        if (cursor.moveToFirst()) {
+            dayRecord.setUvIndex(cursor.getDouble(cursor.getColumnIndex("uv_index")));
+            dayRecord.setBurnTimeMinutes(cursor.getInt(cursor.getColumnIndex("burn_time")));
+            dayRecord.setTanTimeMinutes(cursor.getInt(cursor.getColumnIndex("tan_time")));
+            dayRecord.setVitaminDTimeMinutes(cursor.getInt(cursor.getColumnIndex("vitamin_d_time")));
+            // Calculate activity impact based on UV index
+            dayRecord.setUvActivityImpact(calculateUVImpact(dayRecord.getUvIndex()));
+        }
+        cursor.close();
+    }
+    
+    private void loadDaylightData(DayRecord dayRecord, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_DAYLIGHT_DATA, null, KEY_DATE + "=?", 
+                new String[]{date}, null, null, null);
+        
+        if (cursor.moveToFirst()) {
+            dayRecord.setSunriseTime(cursor.getString(cursor.getColumnIndex("sunrise")));
+            dayRecord.setSunsetTime(cursor.getString(cursor.getColumnIndex("sunset")));
+            dayRecord.setDayLengthMinutes(cursor.getLong(cursor.getColumnIndex("daylight_duration")));
+            dayRecord.setCurrentCircadianPhase(cursor.getString(cursor.getColumnIndex("circadian_phase")));
+            // Calculate activity impact based on circadian rhythm
+            dayRecord.setCircadianActivityScore(calculateCircadianImpact(dayRecord.getCurrentCircadianPhase()));
+        }
+        cursor.close();
+    }
+    
+    // Helper methods for calculating environmental impacts
+    private float calculateAirQualityImpact(int aqi) {
+        if (aqi <= 50) return 1.0f;      // Good
+        if (aqi <= 100) return 0.9f;     // Moderate
+        if (aqi <= 150) return 0.8f;     // Unhealthy for sensitive groups
+        if (aqi <= 200) return 0.7f;     // Unhealthy
+        if (aqi <= 300) return 0.5f;     // Very unhealthy
+        return 0.3f;                     // Hazardous
+    }
+    
+    private float calculateMoonPhaseImpact(String moonPhase) {
+        if (moonPhase == null) return 1.0f;
+        switch (moonPhase.toLowerCase()) {
+            case "new moon": return 0.9f;
+            case "waxing crescent": return 0.95f;
+            case "first quarter": return 1.0f;
+            case "waxing gibbous": return 1.05f;
+            case "full moon": return 1.1f;
+            case "waning gibbous": return 1.05f;
+            case "last quarter": return 1.0f;
+            case "waning crescent": return 0.95f;
+            default: return 1.0f;
+        }
+    }
+    
+    private float calculateUVImpact(double uvIndex) {
+        if (uvIndex <= 2) return 0.8f;   // Low
+        if (uvIndex <= 5) return 0.9f;   // Moderate
+        if (uvIndex <= 7) return 1.0f;   // High (optimal)
+        if (uvIndex <= 10) return 0.8f;  // Very high
+        return 0.6f;                     // Extreme
+    }
+    
+    private float calculateCircadianImpact(String phase) {
+        if (phase == null) return 1.0f;
+        switch (phase.toLowerCase()) {
+            case "dawn": return 1.1f;
+            case "morning": return 1.2f;
+            case "midday": return 1.0f;
+            case "afternoon": return 1.1f;
+            case "evening": return 0.9f;
+            case "night": return 0.7f;
+            default: return 1.0f;
+        }
+    }
+    
     public void close() {
         SQLiteDatabase db = this.getReadableDatabase();
         if (db != null && db.isOpen()) {
