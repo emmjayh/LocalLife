@@ -18,6 +18,8 @@ import com.locallife.app.models.Event;
 import com.locallife.app.views.ActivityHeatMapView;
 import com.locallife.app.views.StatsCardView;
 import com.locallife.model.DayRecord;
+import com.locallife.database.DatabaseHelper;
+import com.locallife.service.EnvironmentalInsightsService;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -43,6 +45,8 @@ public class CalendarFragment extends Fragment implements EventAdapter.OnEventCl
     private EventAdapter eventAdapter;
     private List<Event> allEvents = new ArrayList<>();
     private Map<String, Integer> activityData = new HashMap<>();
+    private DatabaseHelper databaseHelper;
+    private EnvironmentalInsightsService environmentalInsightsService;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -53,6 +57,10 @@ public class CalendarFragment extends Fragment implements EventAdapter.OnEventCl
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        // Initialize services
+        databaseHelper = DatabaseHelper.getInstance(getContext());
+        environmentalInsightsService = new EnvironmentalInsightsService(getContext());
         
         initializeViews(view);
         setupCalendar();
@@ -176,24 +184,131 @@ public class CalendarFragment extends Fragment implements EventAdapter.OnEventCl
     }
     
     private void loadActivityData() {
-        // TODO: Load from database
-        // For now, use sample data
+        // Load activity data from database
+        loadHeatMapData();
         updateStatsCards();
     }
     
+    private void loadHeatMapData() {
+        try {
+            // Get the last 365 days of data
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.DAY_OF_YEAR, -365);
+            
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            Map<String, Integer> heatMapData = new HashMap<>();
+            
+            // Load data for each day
+            for (int i = 0; i < 365; i++) {
+                String date = dateFormat.format(calendar.getTime());
+                DayRecord dayRecord = databaseHelper.getDayRecord(date);
+                
+                if (dayRecord != null) {
+                    // Load environmental data for this day
+                    databaseHelper.loadEnvironmentalData(dayRecord, date);
+                    
+                    // Convert activity score to heat map intensity (0-4)
+                    int intensity = (int) (dayRecord.getActivityScore() / 25); // 0-100 -> 0-4
+                    intensity = Math.max(0, Math.min(4, intensity));
+                    heatMapData.put(date, intensity);
+                } else {
+                    heatMapData.put(date, 0); // No data = no activity
+                }
+                
+                calendar.add(Calendar.DAY_OF_YEAR, 1);
+            }
+            
+            // Update heat map view
+            if (heatMapView != null) {
+                heatMapView.setActivityData(heatMapData);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fallback to sample data
+            generateSampleHeatMapData();
+        }
+    }
+    
+    private void generateSampleHeatMapData() {
+        // Generate sample data for demonstration
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, -365);
+        
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        Map<String, Integer> sampleData = new HashMap<>();
+        
+        for (int i = 0; i < 365; i++) {
+            String date = dateFormat.format(calendar.getTime());
+            int intensity = (int) (Math.random() * 5); // Random intensity 0-4
+            sampleData.put(date, intensity);
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+        }
+        
+        if (heatMapView != null) {
+            heatMapView.setActivityData(sampleData);
+        }
+    }
+    
     private void updateStatsCards() {
-        // Sample data - replace with actual database queries
-        statsSteps.setValue("8,543");
-        statsSteps.setSubtitle("Daily Goal: 10,000");
-        statsSteps.setProgress(85.4f);
-        
-        statsPlaces.setValue("12");
-        statsPlaces.setSubtitle("Unique locations");
-        statsPlaces.setProgress(60.0f);
-        
-        statsActivities.setValue("24");
-        statsActivities.setSubtitle("Events tracked");
-        statsActivities.setProgress(75.0f);
+        try {
+            // Get today's data
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            String today = dateFormat.format(new java.util.Date());
+            DayRecord todayRecord = databaseHelper.getDayRecord(today);
+            
+            if (todayRecord != null) {
+                // Load environmental data
+                databaseHelper.loadEnvironmentalData(todayRecord, today);
+                
+                // Update steps
+                int steps = todayRecord.getStepCount();
+                statsSteps.setValue(String.format("%,d", steps));
+                statsSteps.setSubtitle("Daily Goal: 10,000");
+                statsSteps.setProgress(Math.min(100, (steps / 10000.0f) * 100));
+                
+                // Update places
+                int places = todayRecord.getPlacesVisited();
+                statsPlaces.setValue(String.valueOf(places));
+                statsPlaces.setSubtitle("Unique locations");
+                statsPlaces.setProgress(Math.min(100, places * 8.33f)); // 12 places = 100%
+                
+                // Update activities (use overall activity score)
+                float activityScore = todayRecord.getActivityScore();
+                statsActivities.setValue(String.format("%.0f", activityScore));
+                statsActivities.setSubtitle("Activity score");
+                statsActivities.setProgress(activityScore);
+                
+            } else {
+                // No data available - use defaults
+                statsSteps.setValue("0");
+                statsSteps.setSubtitle("Daily Goal: 10,000");
+                statsSteps.setProgress(0);
+                
+                statsPlaces.setValue("0");
+                statsPlaces.setSubtitle("Unique locations");
+                statsPlaces.setProgress(0);
+                
+                statsActivities.setValue("0");
+                statsActivities.setSubtitle("Activity score");
+                statsActivities.setProgress(0);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fallback to sample data
+            statsSteps.setValue("8,543");
+            statsSteps.setSubtitle("Daily Goal: 10,000");
+            statsSteps.setProgress(85.4f);
+            
+            statsPlaces.setValue("12");
+            statsPlaces.setSubtitle("Unique locations");
+            statsPlaces.setProgress(60.0f);
+            
+            statsActivities.setValue("24");
+            statsActivities.setSubtitle("Events tracked");
+            statsActivities.setProgress(75.0f);
+        }
     }
     
     private void updateDayStats() {

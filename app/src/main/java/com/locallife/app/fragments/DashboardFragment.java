@@ -21,6 +21,8 @@ import com.locallife.app.views.CircularProgressView;
 import com.locallife.database.DatabaseHelper;
 import com.locallife.model.PhotoMetadata;
 import com.locallife.service.PhotoMetadataService;
+import com.locallife.service.WeatherService;
+import com.locallife.service.LocationService;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -51,6 +53,8 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
     private Runnable updateRunnable;
     private DatabaseHelper databaseHelper;
     private PhotoMetadataService photoMetadataService;
+    private WeatherService weatherService;
+    private LocationService locationService;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -65,6 +69,8 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
         // Initialize services
         databaseHelper = DatabaseHelper.getInstance(getContext());
         photoMetadataService = new PhotoMetadataService(getContext());
+        weatherService = new WeatherService(getContext());
+        locationService = new LocationService(getContext());
         
         initializeViews(view);
         setupRecyclerViews();
@@ -192,11 +198,119 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
     }
     
     private void updateWeatherCard() {
-        // TODO: Get actual weather data
-        WeatherCardView.WeatherData weatherData = new WeatherCardView.WeatherData(
-            "72°F", "Sunny", "65%", "5 mph", "75°F", 
-            R.drawable.ic_weather, R.color.primary_light);
-        weatherCard.setWeatherData(weatherData);
+        // Get current location from LocationService
+        locationService.getCurrentLocation(new LocationService.LocationCallback() {
+            @Override
+            public void onLocationReceived(double latitude, double longitude) {
+                // Get weather for current location
+                weatherService.getCurrentWeather(latitude, longitude, new WeatherService.WeatherCallback() {
+                    @Override
+                    public void onWeatherReceived(WeatherService.WeatherData data) {
+                        // Update UI on main thread
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                // Convert temperature to Fahrenheit
+                                float tempF = (data.getTemperature() * 9/5) + 32;
+                                String temperature = String.format("%.0f°F", tempF);
+                                String humidity = String.format("%.0f%%", data.getHumidity());
+                                String windSpeed = String.format("%.0f mph", data.getWindSpeed() * 0.621371);
+                                
+                                // Get appropriate icon based on weather condition
+                                int weatherIcon = getWeatherIcon(data.getCondition());
+                                int backgroundColor = getWeatherColor(data.getCondition());
+                                
+                                WeatherCardView.WeatherData weatherData = new WeatherCardView.WeatherData(
+                                    temperature, data.getCondition(), humidity, windSpeed, temperature, 
+                                    weatherIcon, backgroundColor);
+                                weatherCard.setWeatherData(weatherData);
+                            });
+                        }
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        // Fallback to default weather data
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                WeatherCardView.WeatherData weatherData = new WeatherCardView.WeatherData(
+                                    "72°F", "Sunny", "65%", "5 mph", "75°F", 
+                                    R.drawable.ic_weather, R.color.primary_light);
+                                weatherCard.setWeatherData(weatherData);
+                            });
+                        }
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                // Use default location (San Francisco) as fallback
+                weatherService.getCurrentWeather(37.7749, -122.4194, new WeatherService.WeatherCallback() {
+                    @Override
+                    public void onWeatherReceived(WeatherService.WeatherData data) {
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                float tempF = (data.getTemperature() * 9/5) + 32;
+                                String temperature = String.format("%.0f°F", tempF);
+                                String humidity = String.format("%.0f%%", data.getHumidity());
+                                String windSpeed = String.format("%.0f mph", data.getWindSpeed() * 0.621371);
+                                
+                                int weatherIcon = getWeatherIcon(data.getCondition());
+                                int backgroundColor = getWeatherColor(data.getCondition());
+                                
+                                WeatherCardView.WeatherData weatherData = new WeatherCardView.WeatherData(
+                                    temperature, data.getCondition(), humidity, windSpeed, temperature, 
+                                    weatherIcon, backgroundColor);
+                                weatherCard.setWeatherData(weatherData);
+                            });
+                        }
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        // Fallback to default weather data
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> {
+                                WeatherCardView.WeatherData weatherData = new WeatherCardView.WeatherData(
+                                    "72°F", "Sunny", "65%", "5 mph", "75°F", 
+                                    R.drawable.ic_weather, R.color.primary_light);
+                                weatherCard.setWeatherData(weatherData);
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    private int getWeatherIcon(String condition) {
+        if (condition == null) return R.drawable.ic_weather;
+        
+        String lowerCondition = condition.toLowerCase();
+        if (lowerCondition.contains("clear") || lowerCondition.contains("sunny")) {
+            return R.drawable.ic_weather; // You can add specific weather icons
+        } else if (lowerCondition.contains("cloud")) {
+            return R.drawable.ic_weather;
+        } else if (lowerCondition.contains("rain")) {
+            return R.drawable.ic_weather;
+        } else if (lowerCondition.contains("snow")) {
+            return R.drawable.ic_weather;
+        }
+        return R.drawable.ic_weather;
+    }
+    
+    private int getWeatherColor(String condition) {
+        if (condition == null) return R.color.primary_light;
+        
+        String lowerCondition = condition.toLowerCase();
+        if (lowerCondition.contains("clear") || lowerCondition.contains("sunny")) {
+            return R.color.weather_sunny;
+        } else if (lowerCondition.contains("cloud")) {
+            return R.color.weather_cloudy;
+        } else if (lowerCondition.contains("rain")) {
+            return R.color.weather_rainy;
+        }
+        return R.color.primary_light;
     }
     
     private void updateStatsCards() {

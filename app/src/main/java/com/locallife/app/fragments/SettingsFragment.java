@@ -1,9 +1,11 @@
 package com.locallife.app.fragments;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -15,6 +17,14 @@ import com.locallife.app.R;
 
 public class SettingsFragment extends Fragment {
 
+    private static final String PREFS_NAME = "locallife_settings";
+    private static final String PREF_NOTIFICATIONS = "notifications_enabled";
+    private static final String PREF_LOCATION_SERVICES = "location_services_enabled";
+    private static final String PREF_DARK_MODE = "dark_mode_enabled";
+    private static final String PREF_USER_NAME = "user_name";
+    private static final String PREF_USER_EMAIL = "user_email";
+
+    private SharedPreferences sharedPreferences;
     private LinearLayout llProfile;
     private LinearLayout llNotifications;
     private LinearLayout llPrivacy;
@@ -40,6 +50,9 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        // Initialize SharedPreferences
+        sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, requireContext().MODE_PRIVATE);
         
         initializeViews(view);
         setupClickListeners();
@@ -91,15 +104,18 @@ public class SettingsFragment extends Fragment {
     }
 
     private void loadUserSettings() {
-        // TODO: Load actual user data from preferences/database
-        tvUserName.setText("John Doe");
-        tvUserEmail.setText("john.doe@example.com");
+        // Load actual user data from preferences
+        String defaultUserName = "John Doe";
+        String defaultUserEmail = "john.doe@example.com";
+        
+        tvUserName.setText(sharedPreferences.getString(PREF_USER_NAME, defaultUserName));
+        tvUserEmail.setText(sharedPreferences.getString(PREF_USER_EMAIL, defaultUserEmail));
         tvAppVersion.setText("Version 1.0.0");
         
-        // Load switch states
-        switchNotifications.setChecked(true);
-        switchLocationServices.setChecked(true);
-        switchDarkMode.setChecked(false);
+        // Load switch states from preferences
+        switchNotifications.setChecked(sharedPreferences.getBoolean(PREF_NOTIFICATIONS, true));
+        switchLocationServices.setChecked(sharedPreferences.getBoolean(PREF_LOCATION_SERVICES, true));
+        switchDarkMode.setChecked(sharedPreferences.getBoolean(PREF_DARK_MODE, false));
     }
 
     private void openProfileSettings() {
@@ -173,14 +189,79 @@ public class SettingsFragment extends Fragment {
     }
 
     private void saveNotificationPreference(boolean enabled) {
-        // TODO: Save to SharedPreferences
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(PREF_NOTIFICATIONS, enabled);
+        editor.apply();
+        
+        // Here you could also trigger actual notification service changes
+        // if (enabled) {
+        //     // Enable notifications
+        // } else {
+        //     // Disable notifications
+        // }
     }
 
     private void saveLocationPreference(boolean enabled) {
-        // TODO: Save to SharedPreferences
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(PREF_LOCATION_SERVICES, enabled);
+        editor.apply();
+        
+        // Here you could also trigger location service changes
+        // if (enabled) {
+        //     // Start location services
+        // } else {
+        //     // Stop location services
+        // }
     }
 
     private void toggleDarkMode(boolean enabled) {
-        // TODO: Apply dark mode theme
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(PREF_DARK_MODE, enabled);
+        editor.apply();
+        
+        // Apply theme change
+        if (enabled) {
+            // Apply dark theme
+            if (getActivity() != null) {
+                getActivity().setTheme(R.style.Theme_LocalLife_Dark);
+            }
+        } else {
+            // Apply light theme
+            if (getActivity() != null) {
+                getActivity().setTheme(R.style.Theme_LocalLife);
+            }
+        }
+        
+        // Restart activity to apply theme change
+        if (getActivity() != null) {
+            getActivity().recreate();
+        }
+    }
+    
+    /**
+     * Save user profile information
+     */
+    public void saveUserProfile(String name, String email) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(PREF_USER_NAME, name);
+        editor.putString(PREF_USER_EMAIL, email);
+        editor.apply();
+        
+        // Update UI
+        tvUserName.setText(name);
+        tvUserEmail.setText(email);
+    }
+    
+    /**
+     * Get current settings as a bundle for other components
+     */
+    public Bundle getCurrentSettings() {
+        Bundle settings = new Bundle();
+        settings.putBoolean(PREF_NOTIFICATIONS, sharedPreferences.getBoolean(PREF_NOTIFICATIONS, true));
+        settings.putBoolean(PREF_LOCATION_SERVICES, sharedPreferences.getBoolean(PREF_LOCATION_SERVICES, true));
+        settings.putBoolean(PREF_DARK_MODE, sharedPreferences.getBoolean(PREF_DARK_MODE, false));
+        settings.putString(PREF_USER_NAME, sharedPreferences.getString(PREF_USER_NAME, "John Doe"));
+        settings.putString(PREF_USER_EMAIL, sharedPreferences.getString(PREF_USER_EMAIL, "john.doe@example.com"));
+        return settings;
     }
 }
