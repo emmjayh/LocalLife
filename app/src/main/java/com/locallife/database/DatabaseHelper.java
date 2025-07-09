@@ -25,7 +25,7 @@ import java.util.Map;
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHelper";
     private static final String DATABASE_NAME = "locallife.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
     
     // Date format for database storage
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -39,6 +39,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TABLE_BATTERY_DATA = "battery_data";
     private static final String TABLE_SCREEN_TIME = "screen_time";
     private static final String TABLE_PHOTO_METADATA = "photo_metadata";
+    private static final String TABLE_AIR_QUALITY = "air_quality";
+    private static final String TABLE_MOON_PHASE = "moon_phase";
+    private static final String TABLE_UV_INDEX = "uv_index";
+    private static final String TABLE_DAYLIGHT_DATA = "daylight_data";
     
     // Day Records table columns
     private static final String KEY_ID = "id";
@@ -128,6 +132,53 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String KEY_IS_PROCESSED = "is_processed";
     private static final String KEY_PROCESSING_ERROR = "processing_error";
     
+    // Environmental data columns
+    // Air quality columns
+    private static final String KEY_AIR_QUALITY_INDEX = "air_quality_index";
+    private static final String KEY_AIR_QUALITY_LEVEL = "air_quality_level";
+    private static final String KEY_PM25_LEVEL = "pm25_level";
+    private static final String KEY_PM10_LEVEL = "pm10_level";
+    private static final String KEY_NO2_LEVEL = "no2_level";
+    private static final String KEY_O3_LEVEL = "o3_level";
+    private static final String KEY_CO_LEVEL = "co_level";
+    private static final String KEY_AIR_QUALITY_IMPACT = "air_quality_impact";
+    
+    // Moon phase columns
+    private static final String KEY_MOON_PHASE = "moon_phase";
+    private static final String KEY_MOON_PHASE_INDEX = "moon_phase_index";
+    private static final String KEY_MOON_ILLUMINATION = "moon_illumination";
+    private static final String KEY_MOON_AGE = "moon_age";
+    private static final String KEY_MOON_DISTANCE = "moon_distance";
+    private static final String KEY_ZODIAC_SIGN = "zodiac_sign";
+    private static final String KEY_IS_SUPERMOON = "is_supermoon";
+    private static final String KEY_MOON_ACTIVITY_IMPACT = "moon_activity_impact";
+    
+    // UV index columns
+    private static final String KEY_UV_INDEX = "uv_index";
+    private static final String KEY_UV_MAX = "uv_max";
+    private static final String KEY_UV_CATEGORY = "uv_category";
+    private static final String KEY_BURN_TIME = "burn_time";
+    private static final String KEY_TAN_TIME = "tan_time";
+    private static final String KEY_PEAK_UV_TIME = "peak_uv_time";
+    private static final String KEY_VITAMIN_D_TIME = "vitamin_d_time";
+    private static final String KEY_UV_ACTIVITY_IMPACT = "uv_activity_impact";
+    
+    // Daylight data columns
+    private static final String KEY_SUNRISE_TIME = "sunrise_time";
+    private static final String KEY_SUNSET_TIME = "sunset_time";
+    private static final String KEY_SOLAR_NOON_TIME = "solar_noon_time";
+    private static final String KEY_DAY_LENGTH = "day_length";
+    private static final String KEY_NIGHT_LENGTH = "night_length";
+    private static final String KEY_DAYLIGHT_CHANGE = "daylight_change";
+    private static final String KEY_CIRCADIAN_SCORE = "circadian_score";
+    
+    // Additional weather columns
+    private static final String KEY_ATMOSPHERIC_PRESSURE = "atmospheric_pressure";
+    private static final String KEY_CLOUD_COVER_PERCENTAGE = "cloud_cover_percentage";
+    private static final String KEY_VISIBILITY = "visibility";
+    private static final String KEY_WIND_DIRECTION = "wind_direction";
+    private static final String KEY_ALTITUDE = "altitude";
+    
     private static DatabaseHelper instance;
     
     private DatabaseHelper(Context context) {
@@ -159,6 +210,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_BATTERY_DATA);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SCREEN_TIME);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_PHOTO_METADATA);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_AIR_QUALITY);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_MOON_PHASE);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_UV_INDEX);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_DAYLIGHT_DATA);
         
         onCreate(db);
     }
@@ -289,6 +344,73 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + KEY_UPDATED_AT + " TEXT NOT NULL"
                 + ")";
         
+        // Air Quality table
+        String CREATE_AIR_QUALITY_TABLE = "CREATE TABLE " + TABLE_AIR_QUALITY + "("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_DATE + " TEXT NOT NULL,"
+                + KEY_TIMESTAMP + " TEXT NOT NULL,"
+                + KEY_LATITUDE + " REAL NOT NULL,"
+                + KEY_LONGITUDE + " REAL NOT NULL,"
+                + KEY_LOCATION + " TEXT,"
+                + KEY_AIR_QUALITY_INDEX + " INTEGER,"
+                + KEY_AIR_QUALITY_LEVEL + " TEXT,"
+                + KEY_PM25_LEVEL + " REAL,"
+                + KEY_PM10_LEVEL + " REAL,"
+                + KEY_NO2_LEVEL + " REAL,"
+                + KEY_O3_LEVEL + " REAL,"
+                + KEY_CO_LEVEL + " REAL,"
+                + KEY_AIR_QUALITY_IMPACT + " REAL"
+                + ")";
+        
+        // Moon Phase table
+        String CREATE_MOON_PHASE_TABLE = "CREATE TABLE " + TABLE_MOON_PHASE + "("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_DATE + " TEXT NOT NULL,"
+                + KEY_TIMESTAMP + " TEXT NOT NULL,"
+                + KEY_MOON_PHASE + " TEXT,"
+                + KEY_MOON_PHASE_INDEX + " INTEGER,"
+                + KEY_MOON_ILLUMINATION + " REAL,"
+                + KEY_MOON_AGE + " REAL,"
+                + KEY_MOON_DISTANCE + " REAL,"
+                + KEY_ZODIAC_SIGN + " TEXT,"
+                + KEY_IS_SUPERMOON + " INTEGER DEFAULT 0,"
+                + KEY_MOON_ACTIVITY_IMPACT + " REAL"
+                + ")";
+        
+        // UV Index table
+        String CREATE_UV_INDEX_TABLE = "CREATE TABLE " + TABLE_UV_INDEX + "("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_DATE + " TEXT NOT NULL,"
+                + KEY_TIMESTAMP + " TEXT NOT NULL,"
+                + KEY_LATITUDE + " REAL NOT NULL,"
+                + KEY_LONGITUDE + " REAL NOT NULL,"
+                + KEY_UV_INDEX + " REAL,"
+                + KEY_UV_MAX + " REAL,"
+                + KEY_UV_CATEGORY + " TEXT,"
+                + KEY_BURN_TIME + " INTEGER,"
+                + KEY_TAN_TIME + " INTEGER,"
+                + KEY_PEAK_UV_TIME + " TEXT,"
+                + KEY_VITAMIN_D_TIME + " REAL,"
+                + KEY_UV_ACTIVITY_IMPACT + " REAL"
+                + ")";
+        
+        // Daylight Data table
+        String CREATE_DAYLIGHT_DATA_TABLE = "CREATE TABLE " + TABLE_DAYLIGHT_DATA + "("
+                + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + KEY_DATE + " TEXT NOT NULL,"
+                + KEY_TIMESTAMP + " TEXT NOT NULL,"
+                + KEY_LATITUDE + " REAL NOT NULL,"
+                + KEY_LONGITUDE + " REAL NOT NULL,"
+                + KEY_SUNRISE_TIME + " TEXT,"
+                + KEY_SUNSET_TIME + " TEXT,"
+                + KEY_SOLAR_NOON_TIME + " TEXT,"
+                + KEY_DAY_LENGTH + " INTEGER,"
+                + KEY_NIGHT_LENGTH + " INTEGER,"
+                + KEY_SEASON + " TEXT,"
+                + KEY_DAYLIGHT_CHANGE + " REAL,"
+                + KEY_CIRCADIAN_SCORE + " REAL"
+                + ")";
+        
         db.execSQL(CREATE_DAY_RECORDS_TABLE);
         db.execSQL(CREATE_LOCATION_VISITS_TABLE);
         db.execSQL(CREATE_STEP_DATA_TABLE);
@@ -296,6 +418,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_BATTERY_DATA_TABLE);
         db.execSQL(CREATE_SCREEN_TIME_TABLE);
         db.execSQL(CREATE_PHOTO_METADATA_TABLE);
+        db.execSQL(CREATE_AIR_QUALITY_TABLE);
+        db.execSQL(CREATE_MOON_PHASE_TABLE);
+        db.execSQL(CREATE_UV_INDEX_TABLE);
+        db.execSQL(CREATE_DAYLIGHT_DATA_TABLE);
     }
     
     private void createIndexes(SQLiteDatabase db) {
@@ -309,6 +435,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_photo_metadata_date ON " + TABLE_PHOTO_METADATA + "(" + KEY_DATE + ")");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_photo_metadata_path ON " + TABLE_PHOTO_METADATA + "(" + KEY_PHOTO_PATH + ")");
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_photo_metadata_date_taken ON " + TABLE_PHOTO_METADATA + "(" + KEY_DATE_TAKEN + ")");
+        
+        // Environmental data indexes
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_air_quality_date ON " + TABLE_AIR_QUALITY + "(" + KEY_DATE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_moon_phase_date ON " + TABLE_MOON_PHASE + "(" + KEY_DATE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_uv_index_date ON " + TABLE_UV_INDEX + "(" + KEY_DATE + ")");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_daylight_data_date ON " + TABLE_DAYLIGHT_DATA + "(" + KEY_DATE + ")");
     }
     
     // Day Records CRUD operations

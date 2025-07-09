@@ -26,7 +26,9 @@
       "Bash(git config:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth:*)"
     ],
     "deny": []
   }
