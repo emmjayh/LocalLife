@@ -41,6 +41,14 @@ public class DayRecord {
     private int photoCount;
     private float photoActivityScore;
     
+    // Media consumption data
+    private int totalMediaMinutes;
+    private int videoMinutes;
+    private int audioMinutes;
+    private int bingeWatchingMinutes;
+    private int uniqueMediaPlatforms;
+    private float mediaConsumptionScore;
+    
     // Environmental data
     // Air quality data
     private int airQualityIndex;
@@ -150,9 +158,13 @@ public class DayRecord {
         // Social activity score based on places visited and photos
         socialActivityScore = Math.min(100, placesVisited * 15 + (locationVisits.size() * 10) + (photoCount * 5));
         
-        // Productivity score based on screen time and battery usage
+        // Productivity score based on screen time, battery usage, and media consumption
         float screenTimeScore = Math.max(0, 100 - (screenTimeMinutes / 4.8f)); // 8 hours = 0 score
-        productivityScore = (screenTimeScore + (100 - batteryUsagePercent)) / 2;
+        
+        // Media consumption score (moderate consumption is healthy, excessive is not)
+        float mediaScore = calculateMediaConsumptionScore();
+        
+        productivityScore = (screenTimeScore + (100 - batteryUsagePercent) + mediaScore) / 3;
         
         // Base wellbeing score with photo activity contribution
         float baseWellbeingScore = (physicalActivityScore * 0.35f + 
@@ -215,6 +227,36 @@ public class DayRecord {
         
         // Ensure multiplier stays within reasonable bounds
         return Math.max(0.3f, Math.min(1.5f, multiplier));
+    }
+    
+    // Calculate media consumption score
+    private float calculateMediaConsumptionScore() {
+        // Optimal media consumption: 1-3 hours per day
+        // Score decreases for excessive consumption or complete avoidance
+        
+        if (totalMediaMinutes == 0) {
+            return 60; // Slight penalty for no media consumption
+        }
+        
+        float hours = totalMediaMinutes / 60.0f;
+        
+        // Optimal range: 1-3 hours = 100 points
+        if (hours >= 1.0f && hours <= 3.0f) {
+            return 100;
+        }
+        
+        // Less than 1 hour: linear scale from 60 to 100
+        if (hours < 1.0f) {
+            return 60 + (hours * 40);
+        }
+        
+        // More than 3 hours: decreasing score
+        if (hours <= 6.0f) {
+            return 100 - ((hours - 3.0f) * 20); // 20 points per hour over 3
+        }
+        
+        // Excessive consumption (>6 hours): significant penalty
+        return Math.max(20, 40 - ((hours - 6.0f) * 10));
     }
     
     // Getters and setters
@@ -304,6 +346,25 @@ public class DayRecord {
     
     public float getPhotoActivityScore() { return photoActivityScore; }
     public void setPhotoActivityScore(float photoActivityScore) { this.photoActivityScore = photoActivityScore; }
+    
+    // Media consumption getters and setters
+    public int getTotalMediaMinutes() { return totalMediaMinutes; }
+    public void setTotalMediaMinutes(int totalMediaMinutes) { this.totalMediaMinutes = totalMediaMinutes; }
+    
+    public int getVideoMinutes() { return videoMinutes; }
+    public void setVideoMinutes(int videoMinutes) { this.videoMinutes = videoMinutes; }
+    
+    public int getAudioMinutes() { return audioMinutes; }
+    public void setAudioMinutes(int audioMinutes) { this.audioMinutes = audioMinutes; }
+    
+    public int getBingeWatchingMinutes() { return bingeWatchingMinutes; }
+    public void setBingeWatchingMinutes(int bingeWatchingMinutes) { this.bingeWatchingMinutes = bingeWatchingMinutes; }
+    
+    public int getUniqueMediaPlatforms() { return uniqueMediaPlatforms; }
+    public void setUniqueMediaPlatforms(int uniqueMediaPlatforms) { this.uniqueMediaPlatforms = uniqueMediaPlatforms; }
+    
+    public float getMediaConsumptionScore() { return mediaConsumptionScore; }
+    public void setMediaConsumptionScore(float mediaConsumptionScore) { this.mediaConsumptionScore = mediaConsumptionScore; }
     
     // Environmental data getters and setters
     // Air quality

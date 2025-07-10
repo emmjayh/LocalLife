@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/dialog_background"
+    android:padding="24dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="All Predictions"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Predictions Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="400dp">
+
+        <TextView
+            android:id="@+id/tvPredictionsContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Loading predictions..."
+            android:textSize="12sp"
+            android:textColor="@android:color/black"
+            android:fontFamily="monospace"
+            android:layout_marginBottom="16dp" />
+
+    </ScrollView>
+
+    <!-- Close Button -->
+    <Button
+        android:id="@+id/btnClose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Close"
+        android:layout_gravity="end"
+        android:background="@drawable/button_primary"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

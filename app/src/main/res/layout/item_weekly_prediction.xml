@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="100dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/card_background"
+    android:padding="12dp"
+    android:layout_marginHorizontal="4dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <!-- Day Name -->
+    <TextView
+        android:id="@+id/tvDayName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mon"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:gravity="center"
+        android:layout_marginBottom="4dp" />
+
+    <!-- Date -->
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="7/15"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Top Activity -->
+    <TextView
+        android:id="@+id/tvTopActivity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Outdoor"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:gravity="center"
+        android:layout_marginBottom="4dp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <!-- Confidence Score -->
+    <TextView
+        android:id="@+id/tvConfidence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="85%"
+        android:textSize="10sp"
+        android:textColor="@android:color/holo_green_dark"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Confidence Bar -->
+    <View
+        android:id="@+id/viewConfidenceBar"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:background="@android:color/holo_green_dark"
+        android:layout_gravity="center" />
+
+</LinearLayout>

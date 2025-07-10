@@ -20,9 +20,11 @@ import com.locallife.app.views.StatsCardView;
 import com.locallife.app.views.CircularProgressView;
 import com.locallife.database.DatabaseHelper;
 import com.locallife.model.PhotoMetadata;
+import com.locallife.model.MediaConsumption;
 import com.locallife.service.PhotoMetadataService;
 import com.locallife.service.WeatherService;
 import com.locallife.service.LocationService;
+import com.locallife.service.MediaTrackingService;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -55,6 +57,7 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
     private PhotoMetadataService photoMetadataService;
     private WeatherService weatherService;
     private LocationService locationService;
+    private MediaTrackingService mediaTrackingService;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
@@ -71,6 +74,7 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
         photoMetadataService = new PhotoMetadataService(getContext());
         weatherService = new WeatherService(getContext());
         locationService = new LocationService(getContext());
+        mediaTrackingService = new MediaTrackingService(getContext());
         
         initializeViews(view);
         setupRecyclerViews();
@@ -482,6 +486,9 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
         
         // Load photo-based insights
         loadPhotoInsights(insights);
+        
+        // Load media consumption insights
+        loadMediaInsights(insights);
     }
     
     private void loadPhotoInsights(List<InsightAdapter.Insight> insights) {
@@ -555,6 +562,65 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
         // TODO: Show insight details
     }
     
+    private void loadMediaInsights(List<InsightAdapter.Insight> insights) {
+        // Get current date
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String today = dateFormat.format(new Date());
+        
+        // Get media consumption data
+        List<MediaConsumption> mediaList = mediaTrackingService.getMediaConsumptionForDate(today);
+        
+        if (!mediaList.isEmpty()) {
+            MediaTrackingService.MediaStats stats = mediaTrackingService.getMediaStats(today);
+            
+            // Create media consumption insight
+            String insightText = "You consumed " + stats.getFormattedTotalTime() + " of media today";
+            String changeText = "↑ Media activity";
+            
+            if (stats.videoMinutes > stats.audioMinutes) {
+                insightText += ", mostly video content";
+                changeText = "↑ Video consumption";
+            } else if (stats.audioMinutes > stats.videoMinutes) {
+                insightText += ", mostly audio content";
+                changeText = "↑ Audio consumption";
+            }
+            
+            // Determine priority based on consumption amount
+            int priority = 1;
+            if (stats.totalMinutes > 180) { // More than 3 hours
+                priority = 3;
+                insightText += " (high consumption)";
+            } else if (stats.totalMinutes > 60) { // More than 1 hour
+                priority = 2;
+            }
+            
+            insights.add(new InsightAdapter.Insight(
+                "Media Consumption", insightText,
+                stats.getFormattedTotalTime(), changeText, 
+                android.R.drawable.ic_menu_slideshow, priority, "media",
+                System.currentTimeMillis()));
+            
+            // Detect binge watching
+            List<MediaTrackingService.BingeSession> bingeSessions = mediaTrackingService.detectBingeSessions(today);
+            if (!bingeSessions.isEmpty()) {
+                MediaTrackingService.BingeSession session = bingeSessions.get(0);
+                insights.add(new InsightAdapter.Insight(
+                    "Binge Watching Detected", 
+                    "You watched " + session.episodeCount + " episodes of " + session.showTitle,
+                    session.episodeCount + " episodes", "↑ Binge session", 
+                    android.R.drawable.ic_menu_slideshow, 2, "media",
+                    System.currentTimeMillis()));
+            }
+        }
+        
+        // Update the adapter
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                insightAdapter.setInsights(insights);
+            });
+        }
+    }
+    
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -563,6 +629,9 @@ public class DashboardFragment extends Fragment implements ActivityAdapter.OnAct
         }
         if (photoMetadataService != null) {
             photoMetadataService.shutdown();
+        }
+        if (mediaTrackingService != null) {
+            mediaTrackingService.shutdown();
         }
     }
 }

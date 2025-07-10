@@ -27,6 +27,7 @@ import com.locallife.service.MoonPhaseService;
 import com.locallife.service.UVIndexService;
 import com.locallife.service.SunriseSunsetService;
 import com.locallife.service.EnvironmentalInsightsService;
+import com.locallife.service.MediaTrackingService;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -69,6 +70,7 @@ public class DataCollectionService extends Service {
     private UVIndexService uvIndexService;
     private SunriseSunsetService sunriseSunsetService;
     private EnvironmentalInsightsService environmentalInsightsService;
+    private MediaTrackingService mediaTrackingService;
     private Handler mainHandler;
     private ScheduledExecutorService scheduledExecutor;
     private ExecutorService backgroundExecutor;
@@ -104,6 +106,7 @@ public class DataCollectionService extends Service {
         uvIndexService = new UVIndexService(this);
         sunriseSunsetService = new SunriseSunsetService(this);
         environmentalInsightsService = new EnvironmentalInsightsService(this);
+        mediaTrackingService = new MediaTrackingService(this);
         mainHandler = new Handler(Looper.getMainLooper());
         scheduledExecutor = Executors.newScheduledThreadPool(5);
         backgroundExecutor = Executors.newFixedThreadPool(3);
@@ -205,6 +208,7 @@ public class DataCollectionService extends Service {
         scheduleWeatherUpdates();
         scheduleEnvironmentalUpdates();
         schedulePhotoScanning();
+        scheduleMediaScanning();
         scheduleInsightsGeneration();
         scheduleDataCleanup();
         scheduleServiceCoordination();
@@ -314,6 +318,14 @@ public class DataCollectionService extends Service {
         }, 0, WEATHER_UPDATE_INTERVAL, TimeUnit.MILLISECONDS); // Same interval as weather
     }
     
+    private void scheduleMediaScanning() {
+        scheduledExecutor.scheduleAtFixedRate(() -> {
+            if (isRunning) {
+                scanMediaConsumption();
+            }
+        }, 0, WEATHER_UPDATE_INTERVAL, TimeUnit.MILLISECONDS); // Same interval as weather
+    }
+    
     private void scheduleInsightsGeneration() {
         scheduledExecutor.scheduleAtFixedRate(() -> {
             if (isRunning) {
@@ -359,6 +371,7 @@ public class DataCollectionService extends Service {
                 syncBatteryData(todayRecord);
                 syncScreenTimeData(todayRecord);
                 syncPhotoData(todayRecord);
+                syncMediaData(todayRecord);
                 
                 // Load environmental data
                 databaseHelper.loadEnvironmentalData(todayRecord, today);
@@ -473,6 +486,64 @@ public class DataCollectionService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error syncing photo data", e);
         }
+    }
+    
+    private void syncMediaData(DayRecord dayRecord) {
+        try {
+            Log.d(TAG, "Syncing media data");
+            
+            // Get media consumption data for today
+            String today = dateFormat.format(new Date());
+            
+            // Get media stats
+            MediaTrackingService.MediaStats stats = mediaTrackingService.getMediaStats(today);
+            
+            // Update day record with media data
+            dayRecord.setTotalMediaMinutes(stats.totalMinutes);
+            dayRecord.setVideoMinutes(stats.videoMinutes);
+            dayRecord.setAudioMinutes(stats.audioMinutes);
+            dayRecord.setUniqueMediaPlatforms(stats.platformUsage.size());
+            
+            // Calculate binge watching minutes
+            List<MediaTrackingService.BingeSession> bingeSessions = mediaTrackingService.detectBingeSessions(today);
+            int bingeMinutes = 0;
+            for (MediaTrackingService.BingeSession session : bingeSessions) {
+                bingeMinutes += session.totalMinutes;
+            }
+            dayRecord.setBingeWatchingMinutes(bingeMinutes);
+            
+            // Calculate media consumption score
+            float mediaScore = calculateMediaConsumptionScore(stats.totalMinutes);
+            dayRecord.setMediaConsumptionScore(mediaScore);
+            
+            Log.d(TAG, "Media data synced - Total: " + stats.totalMinutes + " minutes, Score: " + mediaScore);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error syncing media data", e);
+        }
+    }
+    
+    private float calculateMediaConsumptionScore(int totalMinutes) {
+        // Same logic as in DayRecord but as a standalone method
+        if (totalMinutes == 0) {
+            return 60;
+        }
+        
+        float hours = totalMinutes / 60.0f;
+        
+        if (hours >= 1.0f && hours <= 3.0f) {
+            return 100;
+        }
+        
+        if (hours < 1.0f) {
+            return 60 + (hours * 40);
+        }
+        
+        if (hours <= 6.0f) {
+            return 100 - ((hours - 3.0f) * 20);
+        }
+        
+        return Math.max(20, 40 - ((hours - 6.0f) * 10));
     }
     
     private void updateWeatherData() {
@@ -640,6 +711,23 @@ public class DataCollectionService extends Service {
         });
     }
     
+    private void scanMediaConsumption() {
+        backgroundExecutor.execute(() -> {
+            try {
+                Log.d(TAG, "Scanning media consumption");
+                
+                // Scan for media usage
+                mediaTrackingService.scanMediaConsumption();
+                
+                Log.d(TAG, "Media consumption scan completed");
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error scanning media consumption", e);
+                recordError("Media consumption scan failed: " + e.getMessage());
+            }
+        });
+    }
+    
     private void performDataCleanup() {
         backgroundExecutor.execute(() -> {
             try {
@@ -762,6 +850,10 @@ public class DataCollectionService extends Service {
         }
         if (sunriseSunsetService != null) {
             sunriseSunsetService.shutdown();
+        }
+        
+        if (mediaTrackingService != null) {
+            mediaTrackingService.shutdown();
         }
     }
     

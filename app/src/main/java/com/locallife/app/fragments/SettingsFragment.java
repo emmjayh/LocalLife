@@ -14,6 +14,22 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import com.locallife.app.R;
+import com.locallife.database.DatabaseHelper;
+import com.locallife.model.DayRecord;
+import com.locallife.model.PhotoMetadata;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Environment;
+import androidx.core.content.FileProvider;
+import java.io.File;
 
 public class SettingsFragment extends Fragment {
 
@@ -171,6 +187,7 @@ public class SettingsFragment extends Fragment {
 
     private void openHelpCenter() {
         // TODO: Navigate to help center
+        showExportDialog();
     }
 
     private void showLogoutDialog() {
@@ -263,5 +280,288 @@ public class SettingsFragment extends Fragment {
         settings.putString(PREF_USER_NAME, sharedPreferences.getString(PREF_USER_NAME, "John Doe"));
         settings.putString(PREF_USER_EMAIL, sharedPreferences.getString(PREF_USER_EMAIL, "john.doe@example.com"));
         return settings;
+    }
+    
+    /**
+     * Show dialog for data export options
+     */
+    private void showExportDialog() {
+        String[] options = {"Export to CSV", "Export to JSON", "Export All Data"};
+        
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Export Data")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            exportToCSV();
+                            break;
+                        case 1:
+                            exportToJSON();
+                            break;
+                        case 2:
+                            exportAllData();
+                            break;
+                    }
+                })
+                .show();
+    }
+    
+    /**
+     * Export daily records to CSV format
+     */
+    private void exportToCSV() {
+        try {
+            DatabaseHelper db = DatabaseHelper.getInstance(getContext());
+            List<DayRecord> records = db.getAllDayRecords();
+            
+            if (records.isEmpty()) {
+                showMessage("No data to export");
+                return;
+            }
+            
+            // Create CSV file
+            String fileName = "locallife_data_" + new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()) + ".csv";
+            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName);
+            
+            FileWriter writer = new FileWriter(file);
+            
+            // Write CSV header
+            writer.append("Date,Steps,Places Visited,Screen Time (min),Battery Usage %,Activity Score,Temperature,Weather,Primary Location\n");
+            
+            // Write data rows
+            for (DayRecord record : records) {
+                writer.append(String.valueOf(record.getDate())).append(",");
+                writer.append(String.valueOf(record.getStepCount())).append(",");
+                writer.append(String.valueOf(record.getPlacesVisited())).append(",");
+                writer.append(String.valueOf(record.getScreenTimeMinutes())).append(",");
+                writer.append(String.valueOf(record.getBatteryUsagePercent())).append(",");
+                writer.append(String.valueOf(record.getActivityScore())).append(",");
+                writer.append(String.valueOf(record.getTemperature())).append(",");
+                writer.append(String.valueOf(record.getWeatherCondition())).append(",");
+                writer.append(String.valueOf(record.getPrimaryLocation())).append("\n");
+            }
+            
+            writer.close();
+            
+            // Share the file
+            shareFile(file, "text/csv");
+            
+        } catch (IOException e) {
+            showMessage("Error exporting data: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Export daily records to JSON format
+     */
+    private void exportToJSON() {
+        try {
+            DatabaseHelper db = DatabaseHelper.getInstance(getContext());
+            List<DayRecord> records = db.getAllDayRecords();
+            
+            if (records.isEmpty()) {
+                showMessage("No data to export");
+                return;
+            }
+            
+            // Create JSON file
+            String fileName = "locallife_data_" + new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()) + ".json";
+            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName);
+            
+            FileWriter writer = new FileWriter(file);
+            
+            // Write JSON
+            writer.append("{\n");
+            writer.append("  \"export_date\": \"").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date())).append("\",\n");
+            writer.append("  \"app_version\": \"1.0.0\",\n");
+            writer.append("  \"data_type\": \"daily_records\",\n");
+            writer.append("  \"records\": [\n");
+            
+            for (int i = 0; i < records.size(); i++) {
+                DayRecord record = records.get(i);
+                writer.append("    {\n");
+                writer.append("      \"date\": \"").append(record.getDate()).append("\",\n");
+                writer.append("      \"step_count\": ").append(String.valueOf(record.getStepCount())).append(",\n");
+                writer.append("      \"places_visited\": ").append(String.valueOf(record.getPlacesVisited())).append(",\n");
+                writer.append("      \"screen_time_minutes\": ").append(String.valueOf(record.getScreenTimeMinutes())).append(",\n");
+                writer.append("      \"battery_usage_percent\": ").append(String.valueOf(record.getBatteryUsagePercent())).append(",\n");
+                writer.append("      \"activity_score\": ").append(String.valueOf(record.getActivityScore())).append(",\n");
+                writer.append("      \"temperature\": ").append(String.valueOf(record.getTemperature())).append(",\n");
+                writer.append("      \"humidity\": ").append(String.valueOf(record.getHumidity())).append(",\n");
+                writer.append("      \"weather_condition\": \"").append(record.getWeatherCondition() != null ? record.getWeatherCondition() : "").append("\",\n");
+                writer.append("      \"primary_location\": \"").append(record.getPrimaryLocation() != null ? record.getPrimaryLocation() : "").append("\",\n");
+                writer.append("      \"phone_unlocks\": ").append(String.valueOf(record.getPhoneUnlocks())).append(",\n");
+                writer.append("      \"photo_count\": ").append(String.valueOf(record.getPhotoCount())).append("\n");
+                writer.append("    }");
+                
+                if (i < records.size() - 1) {
+                    writer.append(",");
+                }
+                writer.append("\n");
+            }
+            
+            writer.append("  ]\n");
+            writer.append("}\n");
+            
+            writer.close();
+            
+            // Share the file
+            shareFile(file, "application/json");
+            
+        } catch (IOException e) {
+            showMessage("Error exporting data: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Export all data including photos and detailed records
+     */
+    private void exportAllData() {
+        try {
+            DatabaseHelper db = DatabaseHelper.getInstance(getContext());
+            List<DayRecord> records = db.getAllDayRecords();
+            
+            if (records.isEmpty()) {
+                showMessage("No data to export");
+                return;
+            }
+            
+            // Create comprehensive JSON file
+            String fileName = "locallife_full_export_" + new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()) + ".json";
+            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName);
+            
+            FileWriter writer = new FileWriter(file);
+            
+            // Write comprehensive JSON
+            writer.append("{\n");
+            writer.append("  \"export_info\": {\n");
+            writer.append("    \"export_date\": \"").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date())).append("\",\n");
+            writer.append("    \"app_version\": \"1.0.0\",\n");
+            writer.append("    \"total_records\": ").append(String.valueOf(records.size())).append("\n");
+            writer.append("  },\n");
+            
+            // Export daily records
+            writer.append("  \"daily_records\": [\n");
+            for (int i = 0; i < records.size(); i++) {
+                DayRecord record = records.get(i);
+                writer.append("    {\n");
+                writer.append("      \"date\": \"").append(record.getDate()).append("\",\n");
+                writer.append("      \"metrics\": {\n");
+                writer.append("        \"step_count\": ").append(String.valueOf(record.getStepCount())).append(",\n");
+                writer.append("        \"places_visited\": ").append(String.valueOf(record.getPlacesVisited())).append(",\n");
+                writer.append("        \"screen_time_minutes\": ").append(String.valueOf(record.getScreenTimeMinutes())).append(",\n");
+                writer.append("        \"battery_usage_percent\": ").append(String.valueOf(record.getBatteryUsagePercent())).append(",\n");
+                writer.append("        \"phone_unlocks\": ").append(String.valueOf(record.getPhoneUnlocks())).append(",\n");
+                writer.append("        \"photo_count\": ").append(String.valueOf(record.getPhotoCount())).append("\n");
+                writer.append("      },\n");
+                writer.append("      \"scores\": {\n");
+                writer.append("        \"activity_score\": ").append(String.valueOf(record.getActivityScore())).append(",\n");
+                writer.append("        \"physical_activity_score\": ").append(String.valueOf(record.getPhysicalActivityScore())).append(",\n");
+                writer.append("        \"social_activity_score\": ").append(String.valueOf(record.getSocialActivityScore())).append(",\n");
+                writer.append("        \"productivity_score\": ").append(String.valueOf(record.getProductivityScore())).append(",\n");
+                writer.append("        \"overall_wellbeing_score\": ").append(String.valueOf(record.getOverallWellbeingScore())).append("\n");
+                writer.append("      },\n");
+                writer.append("      \"environmental\": {\n");
+                writer.append("        \"temperature\": ").append(String.valueOf(record.getTemperature())).append(",\n");
+                writer.append("        \"humidity\": ").append(String.valueOf(record.getHumidity())).append(",\n");
+                writer.append("        \"weather_condition\": \"").append(record.getWeatherCondition() != null ? record.getWeatherCondition() : "").append("\",\n");
+                writer.append("        \"wind_speed\": ").append(String.valueOf(record.getWindSpeed())).append("\n");
+                writer.append("      },\n");
+                writer.append("      \"location\": {\n");
+                writer.append("        \"primary_location\": \"").append(record.getPrimaryLocation() != null ? record.getPrimaryLocation() : "").append("\",\n");
+                writer.append("        \"total_travel_distance\": ").append(String.valueOf(record.getTotalTravelDistance())).append("\n");
+                writer.append("      }\n");
+                writer.append("    }");
+                
+                if (i < records.size() - 1) {
+                    writer.append(",");
+                }
+                writer.append("\n");
+            }
+            writer.append("  ],\n");
+            
+            // Export photo metadata summary
+            writer.append("  \"photo_summary\": {\n");
+            writer.append("    \"total_photos\": ").append(String.valueOf(getTotalPhotoCount())).append(",\n");
+            writer.append("    \"by_time_of_day\": ").append(mapToJson(db.getPhotoCountsByTimeOfDay())).append(",\n");
+            writer.append("    \"by_day_of_week\": ").append(mapToJson(db.getPhotoCountsByDayOfWeek())).append(",\n");
+            writer.append("    \"by_activity_type\": ").append(mapToJson(db.getPhotoCountsByActivityType())).append("\n");
+            writer.append("  }\n");
+            
+            writer.append("}\n");
+            
+            writer.close();
+            
+            // Share the file
+            shareFile(file, "application/json");
+            
+        } catch (IOException e) {
+            showMessage("Error exporting data: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Share exported file
+     */
+    private void shareFile(File file, String mimeType) {
+        try {
+            Uri fileUri = FileProvider.getUriForFile(getContext(), 
+                getContext().getPackageName() + ".fileprovider", file);
+            
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType(mimeType);
+            shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, "LocalLife Data Export");
+            shareIntent.putExtra(Intent.EXTRA_TEXT, "Exported data from LocalLife app");
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            
+            startActivity(Intent.createChooser(shareIntent, "Share exported data"));
+            
+        } catch (Exception e) {
+            showMessage("Error sharing file: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Helper method to convert map to JSON string
+     */
+    private String mapToJson(java.util.Map<String, Integer> map) {
+        StringBuilder json = new StringBuilder("{");
+        boolean first = true;
+        for (java.util.Map.Entry<String, Integer> entry : map.entrySet()) {
+            if (!first) json.append(", ");
+            json.append("\"").append(entry.getKey()).append("\": ").append(entry.getValue());
+            first = false;
+        }
+        json.append("}");
+        return json.toString();
+    }
+    
+    /**
+     * Get total photo count across all days
+     */
+    private int getTotalPhotoCount() {
+        try {
+            DatabaseHelper db = DatabaseHelper.getInstance(getContext());
+            List<DayRecord> records = db.getAllDayRecords();
+            int total = 0;
+            for (DayRecord record : records) {
+                total += record.getPhotoCount();
+            }
+            return total;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Show message to user
+     */
+    private void showMessage(String message) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Export")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 }

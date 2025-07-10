@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/card_background"
+    android:layout_marginVertical="4dp"
+    android:padding="16dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <ImageView
+            android:id="@+id/ivActivityIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="12dp"
+            android:src="@drawable/ic_health" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvActivityTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Outdoor Exercise"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/tvActivityDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Perfect weather for outdoor activities"
+                android:textSize="14sp"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextView
+                android:id="@+id/tvConfidenceScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="92%"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_green_dark" />
+
+            <TextView
+                android:id="@+id/tvPriorityLevel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HIGH"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_red_dark" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Timing and Location -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_calendar"
+                android:alpha="0.7" />
+
+            <TextView
+                android:id="@+id/tvTiming"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Now • 45 min"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/ic_location"
+                android:alpha="0.7" />
+
+            <TextView
+                android:id="@+id/tvLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nearby park"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Weather Suitability -->
+    <LinearLayout
+        android:id="@+id/llWeatherSuitability"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Weather Suitability: "
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/viewWeatherBar"
+                android:layout_width="0dp"
+                android:layout_height="4dp"
+                android:layout_weight="1"
+                android:layout_gravity="center_vertical"
+                android:background="@android:color/holo_green_dark"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/tvWeatherScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="85%"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_green_dark" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Reasoning -->
+    <TextView
+        android:id="@+id/tvReasoning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Based on current weather conditions (22°C, clear sky) and your recent activity patterns, this is an excellent choice for you right now."
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        android:background="@android:color/transparent"
+        android:padding="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Requirements and Benefits -->
+    <LinearLayout
+        android:id="@+id/llRequirementsBenefits"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Requirements:"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_orange_dark" />
+
+            <TextView
+                android:id="@+id/tvRequirements"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="• Comfortable shoes\n• Weather-appropriate clothing"
+                android:textSize="10sp"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Benefits:"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_green_dark" />
+
+            <TextView
+                android:id="@+id/tvBenefits"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="• Improved fitness\n• Fresh air and vitamin D"
+                android:textSize="10sp"
+                android:textColor="@android:color/darker_gray" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnDismiss"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="Dismiss"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            android:background="@android:color/transparent"
+            android:minWidth="0dp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnAccept"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="I'll Do This"
+            android:textSize="12sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_primary"
+            android:minWidth="0dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

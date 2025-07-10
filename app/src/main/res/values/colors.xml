@@ -58,4 +58,18 @@
     <color name="weather_rainy">#2196F3</color>
     <color name="weather_stormy">#3F51B5</color>
     <color name="weather_snowy">#F5F5F5</color>
+    
+    <!-- Dark Theme Colors for Visualizations -->
+    <color name="background_dark">#1A1A1A</color>
+    <color name="background_secondary">#2A2A2A</color>
+    <color name="card_background">#2A2A2A</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#AAAAAA</color>
+    <color name="border_color">#444444</color>
+    
+    <!-- Additional colors for visualizations -->
+    <color name="secondary">#9C27B0</color>
+    
+    <!-- Social Sharing Colors -->
+    <color name="primary_color">#4CAF50</color>
 </resources>
